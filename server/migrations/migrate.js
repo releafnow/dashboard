@@ -1,13 +1,30 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'releafnow',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-});
+// Render provides DATABASE_URL as a connection string
+// Support both DATABASE_URL (production) and individual DB_* vars (local dev)
+let poolConfig;
+
+if (process.env.DATABASE_URL) {
+  // Use the connection string directly (Render, Heroku, etc.)
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL.includes('render.com') || process.env.DATABASE_URL.includes('amazonaws.com') 
+      ? { rejectUnauthorized: false } 
+      : false,
+  };
+} else {
+  // Use individual environment variables (local development)
+  poolConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'releafnow',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '',
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 async function migrate() {
   try {
@@ -114,6 +131,3 @@ async function migrate() {
 }
 
 migrate();
-
-
-
