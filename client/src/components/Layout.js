@@ -15,13 +15,13 @@ const Layout = ({ children }) => {
 
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/trees', label: 'My Trees', icon: '🌳' },
-    { path: '/analytics', label: 'Analytics', icon: '📈' },
+    { path: '/trees', label: isAdmin ? 'Trees' : 'My Trees', icon: '🌳' },
     { path: '/tokens', label: 'Tokens', icon: '🪙' },
     { path: '/profile', label: 'Profile', icon: '👤' },
   ];
 
   if (isAdmin) {
+    menuItems.splice(1, 0, { path: '/analytics', label: 'Analytics', icon: '📈' });
     menuItems.splice(2, 0, { path: '/users', label: 'Users', icon: '👥' });
   }
 
@@ -75,5 +75,6 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
+
 
 

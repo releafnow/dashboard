@@ -23,3 +23,4 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO releafnow_us
 -- ALTER SCHEMA public OWNER TO releafnow_user;
 
 
+

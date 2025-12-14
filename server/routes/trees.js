@@ -211,13 +211,16 @@ router.patch('/:id/status', auth, requireAdmin, [
 
     let query = 'UPDATE trees SET status = $1, notes = $2';
     let params = [status, notes || null];
+    let paramIndex = 3;
 
     if (status === 'verified') {
-      query += ', verified_by = $3, verified_at = CURRENT_TIMESTAMP';
+      query += `, verified_by = $${paramIndex}, verified_at = CURRENT_TIMESTAMP`;
       params.push(req.user.id);
+      paramIndex++;
     }
 
-    query += ' WHERE id = $' + params.length + ' RETURNING *';
+    // Add tree ID parameter
+    query += ` WHERE id = $${paramIndex} RETURNING *`;
     params.push(req.params.id);
 
     const result = await pool.query(query, params);
@@ -260,5 +263,6 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
