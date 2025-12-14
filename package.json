@@ -1,0 +1,21 @@
+{
+  "name": "releafnow-dashboard",
+  "version": "1.0.0",
+  "description": "Releafnow Admin Dashboard - Tree Planting and Token Reward System",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": ["releafnow", "dashboard", "trees", "tokens"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
+

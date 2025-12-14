@@ -1,0 +1,302 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import './TokenManagement.css';
+
+const TokenManagement = () => {
+  const { user, isAdmin } = useAuth();
+  const [transactions, setTransactions] = useState([]);
+  const [balance, setBalance] = useState(null);
+  const [userBalances, setUserBalances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAllocateForm, setShowAllocateForm] = useState(false);
+  const [formData, setFormData] = useState({
+    user_id: '',
+    amount: '',
+    type: 'reward',
+    tree_id: '',
+    notes: '',
+    auto_approve: false,
+  });
+  const [users, setUsers] = useState([]);
+  const [trees, setTrees] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [transRes, balanceRes, usersRes] = await Promise.all([
+        axios.get('/api/tokens/transactions'),
+        axios.get('/api/tokens/balance'),
+        isAdmin ? axios.get('/api/users') : Promise.resolve({ data: [] }),
+      ]);
+
+      setTransactions(transRes.data);
+      setBalance(balanceRes.data);
+
+      if (isAdmin) {
+        setUsers(usersRes.data.filter((u) => u.role === 'member'));
+        fetchUserBalances();
+      }
+    } catch (error) {
+      console.error('Fetch data error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserBalances = async () => {
+    try {
+      const response = await axios.get('/api/tokens/balances');
+      setUserBalances(response.data);
+    } catch (error) {
+      console.error('Fetch balances error:', error);
+    }
+  };
+
+  const handleAllocate = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('/api/tokens/allocate', {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        user_id: parseInt(formData.user_id),
+        tree_id: formData.tree_id ? parseInt(formData.tree_id) : null,
+      });
+      setShowAllocateForm(false);
+      setFormData({
+        user_id: '',
+        amount: '',
+        type: 'reward',
+        tree_id: '',
+        notes: '',
+        auto_approve: false,
+      });
+      fetchData();
+    } catch (error) {
+      console.error('Allocate tokens error:', error);
+      alert(error.response?.data?.message || 'Failed to allocate tokens');
+    }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await axios.patch(`/api/tokens/transactions/${id}/status`, { status });
+      fetchData();
+    } catch (error) {
+      console.error('Update status error:', error);
+      alert('Failed to update transaction status');
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  return (
+    <div className="token-management">
+      <div className="page-header">
+        <h1>Token Management</h1>
+        {isAdmin && (
+          <button className="btn-primary" onClick={() => setShowAllocateForm(true)}>
+            + Allocate Tokens
+          </button>
+        )}
+      </div>
+
+      {!isAdmin && balance && (
+        <div className="balance-card">
+          <h2>Your Token Balance</h2>
+          <div className="balance-info">
+            <div className="balance-item">
+              <span className="balance-label">Total Earned</span>
+              <span className="balance-value">{parseFloat(balance.total_earned || 0).toFixed(2)} RLF</span>
+            </div>
+            <div className="balance-item">
+              <span className="balance-label">Total Spent</span>
+              <span className="balance-value">{parseFloat(balance.total_spent || 0).toFixed(2)} RLF</span>
+            </div>
+            <div className="balance-item highlight">
+              <span className="balance-label">Current Balance</span>
+              <span className="balance-value">{parseFloat(balance.balance || 0).toFixed(2)} RLF</span>
+            </div>
+            {balance.pending_rewards > 0 && (
+              <div className="balance-item">
+                <span className="balance-label">Pending Rewards</span>
+                <span className="balance-value">{balance.pending_rewards} transactions</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isAdmin && showAllocateForm && (
+        <div className="modal-overlay" onClick={() => setShowAllocateForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Allocate Tokens</h2>
+            <form onSubmit={handleAllocate}>
+              <div className="form-group">
+                <label>User *</label>
+                <select
+                  value={formData.user_id}
+                  onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                  required
+                >
+                  <option value="">Select user</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Amount (RLF) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Type *</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  required
+                >
+                  <option value="reward">Reward</option>
+                  <option value="deduction">Deduction</option>
+                  <option value="transfer">Transfer</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.auto_approve}
+                    onChange={(e) => setFormData({ ...formData, auto_approve: e.target.checked })}
+                  />
+                  Auto-approve (mark as completed immediately)
+                </label>
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowAllocateForm(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary">Allocate</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="section">
+          <h2>User Balances</h2>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Total Earned</th>
+                  <th>Total Spent</th>
+                  <th>Balance</th>
+                  <th>Pending</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userBalances.map((ub) => (
+                  <tr key={ub.id}>
+                    <td>{ub.name}</td>
+                    <td>{ub.email}</td>
+                    <td>{parseFloat(ub.total_earned || 0).toFixed(2)} RLF</td>
+                    <td>{parseFloat(ub.total_spent || 0).toFixed(2)} RLF</td>
+                    <td className="balance-cell">{parseFloat(ub.balance || 0).toFixed(2)} RLF</td>
+                    <td>{ub.pending_rewards || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="section">
+        <h2>Transaction History</h2>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                {isAdmin && <th>User</th>}
+                {isAdmin && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((tx) => (
+                <tr key={tx.id}>
+                  <td>{new Date(tx.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <span className={`type-badge type-${tx.type}`}>{tx.type}</span>
+                  </td>
+                  <td className={tx.type === 'reward' ? 'amount-positive' : 'amount-negative'}>
+                    {tx.type === 'reward' ? '+' : '-'}{parseFloat(tx.amount).toFixed(2)} RLF
+                  </td>
+                  <td>
+                    <span className={`status-badge status-${tx.status}`}>{tx.status}</span>
+                  </td>
+                  {isAdmin && <td>{tx.user_name || tx.user_email}</td>}
+                  {isAdmin && tx.status === 'pending' && (
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn-success-small"
+                          onClick={() => handleStatusChange(tx.id, 'completed')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn-danger-small"
+                          onClick={() => handleStatusChange(tx.id, 'cancelled')}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TokenManagement;
+
+
