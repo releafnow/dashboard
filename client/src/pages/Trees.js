@@ -94,7 +94,7 @@ const Trees = () => {
           <div key={tree.id} className="tree-card">
             <div className="tree-card-image">
               <img
-                src={`http://localhost:5000/uploads/trees/${tree.photo}`}
+                src={`/uploads/trees/${tree.photo}`}
                 alt={tree.tree_type}
               />
               <div className={`tree-status-badge status-${tree.status}`}>
@@ -184,6 +184,8 @@ const Trees = () => {
 };
 
 export default Trees;
+
+
 
 
 

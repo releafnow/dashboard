@@ -198,7 +198,7 @@ const Users = () => {
                 <td>
                   {user.photo ? (
                     <img
-                      src={`http://localhost:5000/uploads/profiles/${user.photo}`}
+                      src={`/uploads/profiles/${user.photo}`}
                       alt={user.name}
                       className="user-photo"
                     />
@@ -236,6 +236,8 @@ const Users = () => {
 };
 
 export default Users;
+
+
 
 
 

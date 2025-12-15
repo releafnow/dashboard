@@ -28,7 +28,7 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
         photo: null,
       });
       if (tree.photo) {
-        setPreview(`http://localhost:5000/uploads/trees/${tree.photo}`);
+        setPreview(`/uploads/trees/${tree.photo}`);
       }
     }
   }, [tree]);
@@ -201,6 +201,8 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
 };
 
 export default TreeForm;
+
+
 
 
 
