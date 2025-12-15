@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import {
   LineChart,
   Line,
@@ -102,7 +102,7 @@ const Analytics = () => {
       }
       params.append('groupBy', groupBy);
 
-      const response = await axios.get(`/api/analytics?${params.toString()}`);
+      const response = await axiosInstance.get(`/api/analytics?${params.toString()}`);
       setData(response.data);
     } catch (error) {
       console.error('Fetch analytics error:', error);

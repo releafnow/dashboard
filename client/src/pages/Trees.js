@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import TreeForm from '../components/TreeForm';
+import { getUploadUrl } from '../utils/api';
 import './Trees.css';
 
 const Trees = () => {
@@ -17,7 +18,7 @@ const Trees = () => {
 
   const fetchTrees = async () => {
     try {
-      const response = await axios.get('/api/trees');
+      const response = await axiosInstance.get('/api/trees');
       setTrees(response.data);
     } catch (error) {
       console.error('Fetch trees error:', error);
@@ -43,7 +44,7 @@ const Trees = () => {
     }
 
     try {
-      await axios.delete(`/api/trees/${id}`);
+      await axiosInstance.delete(`/api/trees/${id}`);
       fetchTrees();
     } catch (error) {
       console.error('Delete tree error:', error);
@@ -55,7 +56,7 @@ const Trees = () => {
     if (!isAdmin) return;
 
     try {
-      await axios.patch(`/api/trees/${id}/status`, { status });
+      await axiosInstance.patch(`/api/trees/${id}/status`, { status });
       fetchTrees();
     } catch (error) {
       console.error('Update status error:', error);
@@ -94,7 +95,7 @@ const Trees = () => {
           <div key={tree.id} className="tree-card">
             <div className="tree-card-image">
               <img
-                src={`http://localhost:5000/uploads/trees/${tree.photo}`}
+                src={getUploadUrl(`trees/${tree.photo}`)}
                 alt={tree.tree_type}
               />
               <div className={`tree-status-badge status-${tree.status}`}>

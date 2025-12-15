@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { getUploadUrl } from '../utils/api';
 import './Profile.css';
 
 const Profile = () => {
@@ -28,7 +29,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('/api/users/profile/me');
+      const response = await axiosInstance.get('/api/users/profile/me');
       const profile = response.data;
       setFormData({
         name: profile.name || '',
@@ -38,7 +39,7 @@ const Profile = () => {
         photo: null,
       });
       if (profile.photo) {
-        setPreview(`http://localhost:5000/uploads/profiles/${profile.photo}`);
+        setPreview(getUploadUrl(`profiles/${profile.photo}`));
       }
       setLoading(false);
     } catch (error) {
@@ -82,7 +83,7 @@ const Profile = () => {
         submitData.append('photo', formData.photo);
       }
 
-      await axios.put('/api/users/profile/me', submitData, {
+      await axiosInstance.put('/api/users/profile/me', submitData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -115,7 +116,7 @@ const Profile = () => {
     }
 
     try {
-      await axios.put('/api/users/profile/password', {
+      await axiosInstance.put('/api/users/profile/password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });

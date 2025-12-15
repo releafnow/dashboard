@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
+import { getUploadUrl } from '../utils/api';
 import './TreeForm.css';
 
 const TreeForm = ({ tree, onSubmit, onCancel }) => {
@@ -28,7 +29,7 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
         photo: null,
       });
       if (tree.photo) {
-        setPreview(`http://localhost:5000/uploads/trees/${tree.photo}`);
+        setPreview(getUploadUrl(`trees/${tree.photo}`));
       }
     }
   }, [tree]);
@@ -68,11 +69,11 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
       if (formData.photo) submitData.append('photo', formData.photo);
 
       if (tree) {
-        await axios.put(`/api/trees/${tree.id}`, submitData, {
+        await axiosInstance.put(`/api/trees/${tree.id}`, submitData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        await axios.post('/api/trees', submitData, {
+        await axiosInstance.post('/api/trees', submitData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }

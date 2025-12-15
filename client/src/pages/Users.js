@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import './Users.css';
 
@@ -25,7 +25,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users');
+      const response = await axiosInstance.get('/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Fetch users error:', error);
@@ -61,7 +61,7 @@ const Users = () => {
         submitData.append('photo', formData.photo);
       }
 
-      await axios.put(`/api/users/${selectedUser.id}`, submitData, {
+      await axiosInstance.put(`/api/users/${selectedUser.id}`, submitData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -80,7 +80,7 @@ const Users = () => {
     }
 
     try {
-      await axios.delete(`/api/users/${id}`);
+      await axiosInstance.delete(`/api/users/${id}`);
       fetchUsers();
     } catch (error) {
       console.error('Delete user error:', error);
@@ -198,7 +198,7 @@ const Users = () => {
                 <td>
                   {user.photo ? (
                     <img
-                      src={`http://localhost:5000/uploads/profiles/${user.photo}`}
+                      src={getUploadUrl(`profiles/${user.photo}`)}
                       alt={user.name}
                       className="user-photo"
                     />

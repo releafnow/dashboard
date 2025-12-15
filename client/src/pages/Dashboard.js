@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { getUploadUrl } from '../utils/api';
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -98,7 +99,7 @@ const Dashboard = () => {
               .map((tree) => (
                 <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <img
-                    src={`http://localhost:5000/uploads/trees/${tree.photo}`}
+                    src={getUploadUrl(`trees/${tree.photo}`)}
                     alt={tree.tree_type || 'Tree'}
                     className="w-20 h-20 object-cover rounded-lg"
                   />

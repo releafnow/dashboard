@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import './TokenManagement.css';
 
@@ -28,9 +28,9 @@ const TokenManagement = () => {
   const fetchData = async () => {
     try {
       const [transRes, balanceRes, usersRes] = await Promise.all([
-        axios.get('/api/tokens/transactions'),
-        axios.get('/api/tokens/balance'),
-        isAdmin ? axios.get('/api/users') : Promise.resolve({ data: [] }),
+        axiosInstance.get('/api/tokens/transactions'),
+        axiosInstance.get('/api/tokens/balance'),
+        isAdmin ? axiosInstance.get('/api/users') : Promise.resolve({ data: [] }),
       ]);
 
       setTransactions(transRes.data);
@@ -49,7 +49,7 @@ const TokenManagement = () => {
 
   const fetchUserBalances = async () => {
     try {
-      const response = await axios.get('/api/tokens/balances');
+      const response = await axiosInstance.get('/api/tokens/balances');
       setUserBalances(response.data);
     } catch (error) {
       console.error('Fetch balances error:', error);
@@ -59,7 +59,7 @@ const TokenManagement = () => {
   const handleAllocate = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/tokens/allocate', {
+      await axiosInstance.post('/api/tokens/allocate', {
         ...formData,
         amount: parseFloat(formData.amount),
         user_id: parseInt(formData.user_id),
@@ -83,7 +83,7 @@ const TokenManagement = () => {
 
   const handleStatusChange = async (id, status) => {
     try {
-      await axios.patch(`/api/tokens/transactions/${id}/status`, { status });
+      await axiosInstance.patch(`/api/tokens/transactions/${id}/status`, { status });
       fetchData();
     } catch (error) {
       console.error('Update status error:', error);
