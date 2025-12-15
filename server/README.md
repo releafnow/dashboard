@@ -73,6 +73,3 @@ npm run dev
 
 ### Analytics
 - `GET /api/analytics` - Get analytics data
-
-
-
