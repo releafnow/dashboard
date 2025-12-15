@@ -80,7 +80,7 @@ const Dashboard = () => {
             {recentTrees.map((tree) => (
               <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <img
-                  src={`/uploads/trees/${tree.photo}`}
+                  src={`http://localhost:5000/uploads/trees/${tree.photo}`}
                   alt={tree.tree_type}
                   className="w-20 h-20 object-cover rounded-lg"
                 />
@@ -110,8 +110,6 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
 
 
 

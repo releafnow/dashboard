@@ -1,16 +1,11 @@
 const { Pool } = require('pg');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config();
 
 // Render provides DATABASE_URL as a connection string
 // Support both DATABASE_URL (production) and individual DB_* vars (local dev)
 let poolConfig;
 
-// Only use DATABASE_URL if NODE_ENV is production
-// In local development, always use individual DB_* variables even if DATABASE_URL exists
-const isProduction = process.env.NODE_ENV === 'production';
-
-if (isProduction && process.env.DATABASE_URL) {
+if (process.env.DATABASE_URL) {
   // Use the connection string directly (Render, Heroku, etc.)
   poolConfig = {
     connectionString: process.env.DATABASE_URL,
@@ -18,17 +13,15 @@ if (isProduction && process.env.DATABASE_URL) {
       ? { rejectUnauthorized: false } 
       : false,
   };
-  console.log('Using DATABASE_URL for production migration');
 } else {
   // Use individual environment variables (local development)
   poolConfig = {
     host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
+    port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'releafnow',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
   };
-  console.log(`Using local database for migration: ${poolConfig.user}@${poolConfig.host}:${poolConfig.port}/${poolConfig.database}`);
 }
 
 const pool = new Pool(poolConfig);

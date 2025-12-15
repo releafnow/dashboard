@@ -44,26 +44,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Serve static files from React app (for production)
-const clientBuildPath = path.join(__dirname, '..', 'client', 'build');
-if (fs.existsSync(clientBuildPath)) {
-  // Serve static files from React build
-  app.use(express.static(clientBuildPath));
-
-  // Serve React app for all non-API routes (React Router handling)
-  // This MUST be after all API routes and before error handler
-  app.get('*', (req, res, next) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ message: 'API route not found' });
-    }
-    res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
-      if (err) next(err);
-    });
-  });
-}
-
-// Error handling middleware (must be last)
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   
@@ -84,8 +65,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
 
 
 

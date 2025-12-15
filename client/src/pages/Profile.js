@@ -38,7 +38,7 @@ const Profile = () => {
         photo: null,
       });
       if (profile.photo) {
-        setPreview(`/uploads/profiles/${profile.photo}`);
+        setPreview(`http://localhost:5000/uploads/profiles/${profile.photo}`);
       }
       setLoading(false);
     } catch (error) {
@@ -283,8 +283,6 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
 
 
 
