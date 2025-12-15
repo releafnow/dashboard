@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
@@ -14,15 +14,31 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
+      console.log("fetching dashboard data");
       const [statsRes, treesRes] = await Promise.all([
-        axios.get('/api/analytics'),
-        axios.get('/api/trees'),
+        axiosInstance.get('/api/analytics'),
+        axiosInstance.get('/api/trees'),
       ]);
 
-      setStats(statsRes.data.totalStats);
-      setRecentTrees(treesRes.data.slice(0, 5));
+      // Ensure stats is set safely
+      setStats(statsRes.data?.totalStats || null);
+      
+      // Ensure trees data is always an array before calling .slice()
+      let trees = [];
+      if (treesRes && treesRes.data) {
+        if (Array.isArray(treesRes.data)) {
+          trees = treesRes.data;
+        } else {
+          console.warn('Trees API returned non-array data:', treesRes.data);
+        }
+      }
+      setRecentTrees(trees.slice(0, 5));
     } catch (error) {
       console.error('Fetch dashboard data error:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      // Set empty array on error to prevent .map() errors
+      setRecentTrees([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -75,31 +91,33 @@ const Dashboard = () => {
 
       <div className="bg-white rounded-xl p-6 shadow-md">
         <h2 className="text-2xl text-primary mb-5">Recent Tree Submissions</h2>
-        {recentTrees.length > 0 ? (
+        {Array.isArray(recentTrees) && recentTrees.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {recentTrees.map((tree) => (
-              <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <img
-                  src={`http://localhost:5000/uploads/trees/${tree.photo}`}
-                  alt={tree.tree_type}
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary text-base mb-1">{tree.tree_type}</div>
-                  <div className="text-gray-600 text-sm mb-1">{tree.location}</div>
-                  <div className="text-gray-400 text-xs">
-                    Planted: {new Date(tree.planted_date).toLocaleDateString()}
+            {recentTrees
+              .filter(tree => tree && tree.id) // Filter out any invalid entries
+              .map((tree) => (
+                <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <img
+                    src={`http://localhost:5000/uploads/trees/${tree.photo}`}
+                    alt={tree.tree_type || 'Tree'}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-primary text-base mb-1">{tree.tree_type || 'Unknown'}</div>
+                    <div className="text-gray-600 text-sm mb-1">{tree.location || 'Unknown location'}</div>
+                    <div className="text-gray-400 text-xs">
+                      Planted: {tree.planted_date ? new Date(tree.planted_date).toLocaleDateString() : 'Unknown date'}
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize ${
+                    tree.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    tree.status === 'verified' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {tree.status || 'pending'}
                   </div>
                 </div>
-                <div className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize ${
-                  tree.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  tree.status === 'verified' ? 'bg-green-100 text-green-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {tree.status}
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         ) : (
           <div className="text-center py-10 text-gray-500">No trees submitted yet. Start planting!</div>
