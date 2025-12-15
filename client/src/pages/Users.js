@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
+import { getUploadUrl } from '../utils/api';
 import './Users.css';
 
 const Users = () => {
