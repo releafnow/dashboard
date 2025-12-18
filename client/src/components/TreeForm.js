@@ -117,115 +117,204 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
     <div className="tree-form-overlay">
       <div className="tree-form-modal">
         <div className="tree-form-header">
-          <h2>{tree ? 'Edit Tree' : 'Add New Tree'}</h2>
-          <button className="close-btn" onClick={onCancel}>×</button>
+          <div className="header-content">
+            <span className="header-icon">🌱</span>
+            <h2>{tree ? 'Edit Tree' : 'Add New Tree'}</h2>
+          </div>
+          <button className="close-btn" onClick={onCancel} aria-label="Close">
+            <span>×</span>
+          </button>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="tree-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Planting Date *</label>
-              <DatePicker
-                selected={selectedDate}
-                onChange={handleDateChange}
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Select planting date"
-                className="date-picker-input"
-                wrapperClassName="date-picker-wrapper"
-                maxDate={new Date()}
-                showYearDropdown
-                showMonthDropdown
-                dropdownMode="select"
-                isClearable
-                required
-              />
+          <div className="form-section">
+            <div className="form-section-title">
+              <span className="section-icon">📅</span>
+              <span>Basic Information</span>
             </div>
-
-            <div className="form-group">
-              <label>Tree Type *</label>
-              <input
-                type="text"
-                name="tree_type"
-                value={formData.tree_type}
-                onChange={handleChange}
-                required
-                placeholder="e.g., Oak, Pine, Mango"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Location *</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              placeholder="City, Country or full address"
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Latitude (optional)</label>
-              <input
-                type="number"
-                step="any"
-                name="latitude"
-                value={formData.latitude}
-                onChange={handleChange}
-                placeholder="e.g., 40.7128"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Longitude (optional)</label>
-              <input
-                type="number"
-                step="any"
-                name="longitude"
-                value={formData.longitude}
-                onChange={handleChange}
-                placeholder="e.g., -74.0060"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Photo {!tree && '*'}</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              required={!tree}
-            />
-            {preview && (
-              <div className="photo-preview">
-                <img src={preview} alt="Preview" />
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label-with-icon">
+                  <span className="label-icon mr-2">📆</span>
+                  Planting Date <span className="required-asterisk">*</span>
+                </label>
+                <div className="input-wrapper">
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={handleDateChange}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="Select planting date"
+                    className="date-picker-input"
+                    wrapperClassName="date-picker-wrapper"
+                    maxDate={new Date()}
+                    showYearDropdown
+                    showMonthDropdown
+                    dropdownMode="select"
+                    isClearable
+                    required
+                  />
+                </div>
               </div>
-            )}
+
+              <div className="form-group">
+                <label className="label-with-icon">
+                  <span className="label-icon mr-2">🌳</span>
+                  Tree Type <span className="required-asterisk">*</span>
+                </label>
+                <div className="input-wrapper">
+                  <input
+                    type="text"
+                    name="tree_type"
+                    value={formData.tree_type}
+                    onChange={handleChange}
+                    required
+                    placeholder="e.g., Oak, Pine, Mango"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="label-with-icon">
+                <span className="label-icon">📍</span>
+                Location <span className="required-asterisk">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  required
+                  placeholder="City, Country or full address"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label>Notes (optional)</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows="4"
-              placeholder="Additional information about the tree..."
-            />
+          <div className="form-section">
+            <div className="form-section-title">
+              <span className="section-icon">🌐</span>
+              <span>Coordinates (Optional)</span>
+            </div>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label-with-icon">
+                  <span className="label-icon">🔺</span>
+                  Latitude
+                </label>
+                <div className="input-wrapper">
+                  <input
+                    type="number"
+                    step="any"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleChange}
+                    placeholder="e.g., 40.7128"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="label-with-icon">
+                  <span className="label-icon">🔻</span>
+                  Longitude
+                </label>
+                <div className="input-wrapper">
+                  <input
+                    type="number"
+                    step="any"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleChange}
+                    placeholder="e.g., -74.0060"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-title">
+              <span className="section-icon">📸</span>
+              <span>Photo Evidence</span>
+            </div>
+            
+            <div className="form-group">
+              <label className="label-with-icon">
+                <span className="label-icon mr-2">🖼️</span>
+                Photo {!tree && <span className="required-asterisk">*</span>}
+              </label>
+              <div className="file-upload-area">
+                <input
+                  type="file"
+                  id="photo-upload"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  required={!tree}
+                  className="file-input-hidden"
+                />
+                <label htmlFor="photo-upload" className="file-upload-label">
+                  {preview ? (
+                    <div className="photo-preview-container">
+                      <img src={preview} alt="Preview" className="photo-preview-img" />
+                      <span className="photo-change-text">Click to change photo</span>
+                    </div>
+                  ) : (
+                    <div className="file-upload-placeholder">
+                      <span className="upload-icon">📁</span>
+                      <span className="upload-text">Click to upload or drag and drop</span>
+                      <span className="upload-hint">PNG, JPG up to 10MB</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-title">
+              <span className="section-icon">📝</span>
+              <span>Additional Notes</span>
+            </div>
+
+            <div className="form-group">
+              <label className="label-with-icon">
+                <span className="label-icon mr-2">💭</span>
+                Notes
+              </label>
+              <div className="input-wrapper">
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Share additional information about the tree, planting conditions, or any special notes..."
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-actions">
             <button type="button" className="btn-cancel" onClick={onCancel}>
-              Cancel
+              <span>Cancel</span>
             </button>
             <button type="submit" className="btn-submit" disabled={loading}>
-              {loading ? 'Saving...' : tree ? 'Update' : 'Submit'}
+              {loading ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <span>{tree ? '✏️' : '✓'}</span>
+                  <span>{tree ? 'Update Tree' : 'Plant Tree'}</span>
+                </>
+              )}
             </button>
           </div>
         </form>
