@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import axiosInstance from '../config/axios';
 import { getUploadUrl } from '../utils/api';
 import './TreeForm.css';
@@ -17,10 +19,13 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [selectedDate, setSelectedDate] = useState(null);
+
   useEffect(() => {
     if (tree) {
+      const dateValue = tree.planted_date ? tree.planted_date.split('T')[0] : '';
       setFormData({
-        planted_date: tree.planted_date ? tree.planted_date.split('T')[0] : '',
+        planted_date: dateValue,
         location: tree.location || '',
         latitude: tree.latitude || '',
         longitude: tree.longitude || '',
@@ -28,9 +33,12 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
         notes: tree.notes || '',
         photo: null,
       });
+      setSelectedDate(dateValue ? new Date(dateValue) : null);
       if (tree.photo) {
         setPreview(getUploadUrl(`trees/${tree.photo}`));
       }
+    } else {
+      setSelectedDate(null);
     }
   }, [tree]);
 
@@ -39,6 +47,24 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    if (date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      setFormData({
+        ...formData,
+        planted_date: `${year}-${month}-${day}`,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        planted_date: '',
+      });
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -101,11 +127,18 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
           <div className="form-row">
             <div className="form-group">
               <label>Planting Date *</label>
-              <input
-                type="date"
-                name="planted_date"
-                value={formData.planted_date}
-                onChange={handleChange}
+              <DatePicker
+                selected={selectedDate}
+                onChange={handleDateChange}
+                dateFormat="yyyy-MM-dd"
+                placeholderText="Select planting date"
+                className="date-picker-input"
+                wrapperClassName="date-picker-wrapper"
+                maxDate={new Date()}
+                showYearDropdown
+                showMonthDropdown
+                dropdownMode="select"
+                isClearable
                 required
               />
             </div>
