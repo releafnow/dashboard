@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { getUploadUrl } from '../utils/api';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -56,37 +57,74 @@ const Dashboard = () => {
         <p className="text-gray-600 text-base">Here's an overview of your activities</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        <div className="bg-white rounded-xl p-6 flex items-center gap-5 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
-          <div className="text-5xl w-20 h-20 flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl">🌳</div>
-          <div className="flex-1">
-            <div className="text-gray-600 text-sm mb-2">Total Trees</div>
-            <div className="text-primary text-3xl font-bold">{stats?.total_trees || 0}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        {/* Total Trees Card */}
+        <div className="stat-card stat-card-trees group">
+          <div className="stat-card-icon-wrapper">
+            <div className="stat-card-icon trees-icon">
+              <span className="icon-emoji">🌳</span>
+            </div>
+            <div className="stat-card-pattern"></div>
           </div>
+          <div className="stat-card-content">
+            <div className="stat-card-label">Total Trees</div>
+            <div className="stat-card-value">{stats?.total_trees || 0}</div>
+            <div className="stat-card-subtitle">Planted by you</div>
+          </div>
+          <div className="stat-card-decoration"></div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 flex items-center gap-5 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
-          <div className="text-5xl w-20 h-20 flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl">✓</div>
-          <div className="flex-1">
-            <div className="text-gray-600 text-sm mb-2">Verified Trees</div>
-            <div className="text-primary text-3xl font-bold">{stats?.verified_trees || 0}</div>
+        {/* Verified Trees Card */}
+        <div className="stat-card stat-card-verified group">
+          <div className="stat-card-icon-wrapper">
+            <div className="stat-card-icon verified-icon">
+              <span className="icon-emoji">✓</span>
+            </div>
+            <div className="stat-card-pattern"></div>
           </div>
+          <div className="stat-card-content">
+            <div className="stat-card-label">Verified</div>
+            <div className="stat-card-value">{stats?.verified_trees || 0}</div>
+            <div className="stat-card-subtitle">
+              {stats?.total_trees > 0 
+                ? `${Math.round((stats.verified_trees / stats.total_trees) * 100)}% verified`
+                : 'Awaiting verification'
+              }
+            </div>
+          </div>
+          <div className="stat-card-decoration"></div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 flex items-center gap-5 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
-          <div className="text-5xl w-20 h-20 flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl">⏳</div>
-          <div className="flex-1">
-            <div className="text-gray-600 text-sm mb-2">Pending Trees</div>
-            <div className="text-primary text-3xl font-bold">{stats?.pending_trees || 0}</div>
+        {/* Pending Trees Card */}
+        <div className="stat-card stat-card-pending group">
+          <div className="stat-card-icon-wrapper">
+            <div className="stat-card-icon pending-icon">
+              <span className="icon-emoji">⏳</span>
+            </div>
+            <div className="stat-card-pattern"></div>
           </div>
+          <div className="stat-card-content">
+            <div className="stat-card-label">Pending</div>
+            <div className="stat-card-value">{stats?.pending_trees || 0}</div>
+            <div className="stat-card-subtitle">Under review</div>
+          </div>
+          <div className="stat-card-decoration"></div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 flex items-center gap-5 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
-          <div className="text-5xl w-20 h-20 flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl">🪙</div>
-          <div className="flex-1">
-            <div className="text-gray-600 text-sm mb-2">Total Tokens</div>
-            <div className="text-primary text-3xl font-bold">{parseFloat(stats?.total_tokens_allocated || 0).toFixed(2)} RLF</div>
+        {/* Total Tokens Card */}
+        <div className="stat-card stat-card-tokens group">
+          <div className="stat-card-icon-wrapper">
+            <div className="stat-card-icon tokens-icon">
+              <span className="icon-emoji">🪙</span>
+            </div>
+            <div className="stat-card-pattern"></div>
           </div>
+          <div className="stat-card-content">
+            <div className="stat-card-label">Total Tokens</div>
+            <div className="stat-card-value">{parseFloat(stats?.total_tokens_allocated || 0).toFixed(2)}</div>
+            <div className="stat-card-subtitle">RLF earned</div>
+          </div>
+          <div className="stat-card-decoration"></div>
         </div>
       </div>
 

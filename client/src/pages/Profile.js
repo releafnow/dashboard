@@ -143,138 +143,224 @@ const Profile = () => {
   return (
     <div className="profile-page">
       <div className="page-header">
-        <h1>My Profile</h1>
+        <div className="header-content">
+          <span className="header-icon">👤</span>
+          <h1>My Profile</h1>
+        </div>
+        <p className="header-subtitle">Manage your personal information and account settings</p>
       </div>
 
       {message && (
         <div className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>
-          {message}
+          <span className="message-icon">
+            {message.includes('successfully') ? '✓' : '⚠️'}
+          </span>
+          <span>{message}</span>
         </div>
       )}
 
       <div className="profile-section">
-        <h2>Profile Information</h2>
-        <form onSubmit={handleProfileSubmit}>
-          <div className="profile-photo-section">
-            <div className="photo-preview-large">
-              {preview ? (
-                <img src={preview} alt="Profile" />
-              ) : (
-                <div className="photo-placeholder">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-            </div>
-            <div className="photo-upload">
-              <label className="file-label">
-                Change Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
+        <div className="section-header">
+          <span className="section-icon">📸</span>
+          <h2>Profile Photo</h2>
+        </div>
+        <div className="profile-photo-section">
+          <div className="photo-preview-large">
+            {preview ? (
+              <img src={preview} alt="Profile" />
+            ) : (
+              <div className="photo-placeholder">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            )}
           </div>
+          <label className="file-label" htmlFor="profile-photo-input">
+            <span className="file-icon">📁</span>
+            <span>Change Photo</span>
+            <input
+              id="profile-photo-input"
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </div>
 
+      <div className="profile-section">
+        <div className="section-header">
+          <span className="section-icon">👤</span>
+          <h2>Personal Information</h2>
+        </div>
+        <form onSubmit={handleProfileSubmit}>
           <div className="form-grid">
             <div className="form-group">
-              <label>Full Name *</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
+              <label className="label-with-icon">
+                <span className="label-icon">✏️</span>
+                Full Name <span className="required-asterisk">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your full name"
+                />
+              </div>
             </div>
 
             <div className="form-group">
-              <label>Email</label>
-              <input type="email" value={user?.email || ''} disabled />
+              <label className="label-with-icon">
+                <span className="label-icon">📧</span>
+                Email
+              </label>
+              <div className="input-wrapper">
+                <input type="email" value={user?.email || ''} disabled />
+              </div>
+              <span className="field-hint">Email cannot be changed</span>
             </div>
 
             <div className="form-group">
-              <label>Country</label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                placeholder="Your country"
-              />
+              <label className="label-with-icon">
+                <span className="label-icon">🌍</span>
+                Country
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  placeholder="Enter your country"
+                />
+              </div>
             </div>
 
             <div className="form-group">
-              <label>Phone</label>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Your phone number"
-              />
+              <label className="label-with-icon">
+                <span className="label-icon">📱</span>
+                Phone
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Enter your phone number"
+                />
+              </div>
             </div>
           </div>
 
           <div className="form-group">
-            <label>Address</label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              rows="3"
-              placeholder="Your address"
-            />
+            <label className="label-with-icon">
+              <span className="label-icon">📍</span>
+              Address
+            </label>
+            <div className="input-wrapper">
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows="3"
+                placeholder="Enter your full address"
+              />
+            </div>
           </div>
 
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <span>💾</span>
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
 
       <div className="profile-section">
-        <h2>Change Password</h2>
+        <div className="section-header">
+          <span className="section-icon">🔒</span>
+          <h2>Security Settings</h2>
+        </div>
         <form onSubmit={handlePasswordSubmit}>
           <div className="form-group">
-            <label>Current Password *</label>
-            <input
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-              required
-            />
+            <label className="label-with-icon">
+              <span className="label-icon">🔑</span>
+              Current Password <span className="required-asterisk">*</span>
+            </label>
+            <div className="input-wrapper">
+              <input
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                required
+                placeholder="Enter your current password"
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label>New Password *</label>
-            <input
-              type="password"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-              required
-              minLength="6"
-            />
-          </div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="label-with-icon">
+                <span className="label-icon">🔐</span>
+                New Password <span className="required-asterisk">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  required
+                  minLength="6"
+                  placeholder="At least 6 characters"
+                />
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label>Confirm New Password *</label>
-            <input
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-              required
-              minLength="6"
-            />
+            <div className="form-group">
+              <label className="label-with-icon">
+                <span className="label-icon">✅</span>
+                Confirm New Password <span className="required-asterisk">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  required
+                  minLength="6"
+                  placeholder="Re-enter your new password"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Updating...' : 'Update Password'}
+              {saving ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔒</span>
+                  <span>Update Password</span>
+                </>
+              )}
             </button>
           </div>
         </form>
