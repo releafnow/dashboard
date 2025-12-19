@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
-import TawkTo from './components/TawkTo';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -17,7 +16,6 @@ import AuthCallback from './pages/AuthCallback';
 function App() {
   return (
     <AuthProvider>
-      <TawkTo />
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
