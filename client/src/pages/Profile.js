@@ -193,7 +193,6 @@ const Profile = () => {
           <span className="header-icon">👤</span>
           <h1>My Profile</h1>
         </div>
-        <p className="header-subtitle">Manage your personal information and account settings</p>
       </div>
 
       {message && (
@@ -207,39 +206,32 @@ const Profile = () => {
 
       <div className="profile-section">
         <div className="section-header">
-          <span className="section-icon">📸</span>
-          <h2>Profile Photo</h2>
-        </div>
-        <div className="profile-photo-section">
-          <div className="photo-preview-large">
-            {preview ? (
-              <img src={preview} alt="Profile" />
-            ) : (
-              <div className="photo-placeholder">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-          <label className="file-label" htmlFor="profile-photo-input">
-            <span className="file-icon">📁</span>
-            <span>Change Photo</span>
-            <input
-              id="profile-photo-input"
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              style={{ display: 'none' }}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="profile-section">
-        <div className="section-header">
           <span className="section-icon">👤</span>
           <h2>Personal Information</h2>
         </div>
         <form onSubmit={handleProfileSubmit}>
+          <div className="profile-photo-section">
+            <div className="photo-preview-large">
+              {preview ? (
+                <img src={preview} alt="Profile" />
+              ) : (
+                <div className="photo-placeholder">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+            </div>
+            <label className="file-label" htmlFor="profile-photo-input">
+              <span className="file-icon">📁</span>
+              <span>Change Photo</span>
+              <input
+                id="profile-photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
           <div className="form-grid">
             <div className="form-group">
               <label className="label-with-icon">
@@ -330,7 +322,7 @@ const Profile = () => {
               ) : (
                 <>
                   <span>💾</span>
-                  <span>Save Changes</span>
+                  <span>Save</span>
                 </>
               )}
             </button>
