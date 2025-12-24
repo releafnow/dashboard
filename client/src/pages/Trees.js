@@ -6,6 +6,7 @@ import TreeCard from '../components/TreeCard';
 import Pagination from '../components/Pagination';
 import PageHeader from '../components/PageHeader';
 import usePagination from '../hooks/usePagination';
+import { showSuccess, showError } from '../utils/toast';
 import './Trees.css';
 
 const Trees = () => {
@@ -64,9 +65,10 @@ const Trees = () => {
       setError('');
       await axiosInstance.delete(`/api/trees/${id}`);
       await fetchTrees();
+      showSuccess('Tree deleted successfully!');
     } catch (error) {
       console.error('Delete tree error:', error);
-      setError('Failed to delete tree. Please try again.');
+      showError('Failed to delete tree. Please try again.');
     }
   };
 
@@ -77,9 +79,10 @@ const Trees = () => {
       setError('');
       await axiosInstance.patch(`/api/trees/${id}/status`, { status });
       await fetchTrees();
+      showSuccess(`Tree ${status} successfully!`);
     } catch (error) {
       console.error('Update status error:', error);
-      setError('Failed to update status. Please try again.');
+      showError('Failed to update status. Please try again.');
     }
   };
 

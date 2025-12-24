@@ -3,6 +3,7 @@ import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { getUploadUrl } from '../utils/api';
 import { CountrySelect, GetCountries } from 'react-country-state-city';
+import { showSuccess, showError } from '../utils/toast';
 import 'react-country-state-city/dist/react-country-state-city.css';
 import './Profile.css';
 
@@ -24,7 +25,6 @@ const Profile = () => {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -116,7 +116,6 @@ const Profile = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
 
     try {
       const submitData = new FormData();
@@ -134,11 +133,10 @@ const Profile = () => {
       });
 
       await fetchUser();
-      setMessage('Profile updated successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      showSuccess('Profile updated successfully!');
     } catch (error) {
       console.error('Update profile error:', error);
-      setMessage(error.response?.data?.message || 'Failed to update profile');
+      showError(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -147,16 +145,15 @@ const Profile = () => {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage('New passwords do not match');
+      showError('New passwords do not match');
       setSaving(false);
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      setMessage('Password must be at least 6 characters');
+      showError('Password must be at least 6 characters');
       setSaving(false);
       return;
     }
@@ -172,11 +169,10 @@ const Profile = () => {
         newPassword: '',
         confirmPassword: '',
       });
-      setMessage('Password updated successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      showSuccess('Password updated successfully!');
     } catch (error) {
       console.error('Update password error:', error);
-      setMessage(error.response?.data?.message || 'Failed to update password');
+      showError(error.response?.data?.message || 'Failed to update password');
     } finally {
       setSaving(false);
     }
@@ -194,15 +190,6 @@ const Profile = () => {
           <h1>My Profile</h1>
         </div>
       </div>
-
-      {message && (
-        <div className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>
-          <span className="message-icon">
-            {message.includes('successfully') ? '✓' : '⚠️'}
-          </span>
-          <span>{message}</span>
-        </div>
-      )}
 
       <div className="profile-section">
         <div className="section-header">
