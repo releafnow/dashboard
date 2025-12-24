@@ -43,5 +43,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "https://releafnow-server.onrender.com"
+  "proxy": "http://localhost:5000"
 }

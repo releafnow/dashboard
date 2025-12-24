@@ -2,15 +2,30 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../config/axios';
 import { useAuth } from '../contexts/AuthContext';
 import TreeForm from '../components/TreeForm';
-import { getUploadUrl } from '../utils/api';
+import TreeCard from '../components/TreeCard';
+import Pagination from '../components/Pagination';
+import PageHeader from '../components/PageHeader';
+import usePagination from '../hooks/usePagination';
 import './Trees.css';
 
 const Trees = () => {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [trees, setTrees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedTree, setSelectedTree] = useState(null);
+  const [error, setError] = useState('');
+
+  const {
+    currentPage,
+    itemsPerPage,
+    totalPages,
+    paginatedItems: currentTrees,
+    paginationInfo,
+    setItemsPerPage,
+    handlePageChange,
+    ITEMS_PER_PAGE_OPTIONS,
+  } = usePagination(trees);
 
   useEffect(() => {
     fetchTrees();
@@ -18,10 +33,12 @@ const Trees = () => {
 
   const fetchTrees = async () => {
     try {
+      setError('');
       const response = await axiosInstance.get('/api/trees');
       setTrees(response.data);
     } catch (error) {
       console.error('Fetch trees error:', error);
+      setError('Failed to load trees. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -44,11 +61,12 @@ const Trees = () => {
     }
 
     try {
+      setError('');
       await axiosInstance.delete(`/api/trees/${id}`);
-      fetchTrees();
+      await fetchTrees();
     } catch (error) {
       console.error('Delete tree error:', error);
-      alert('Failed to delete tree');
+      setError('Failed to delete tree. Please try again.');
     }
   };
 
@@ -56,117 +74,77 @@ const Trees = () => {
     if (!isAdmin) return;
 
     try {
+      setError('');
       await axiosInstance.patch(`/api/trees/${id}/status`, { status });
-      fetchTrees();
+      await fetchTrees();
     } catch (error) {
       console.error('Update status error:', error);
-      alert('Failed to update status');
+      setError('Failed to update status. Please try again.');
     }
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setSelectedTree(null);
   };
 
   if (loading) {
     return <div className="loading">Loading trees...</div>;
   }
 
+  const actionButton = !isAdmin ? (
+    <button className="btn-primary" onClick={() => setShowForm(true)}>
+      <span className="btn-icon">+</span>
+      <span>Add New Tree</span>
+    </button>
+  ) : null;
+
   return (
     <div className="trees-page">
-      <div className="page-header">
-        <h1>{isAdmin ? 'All Trees' : 'My Trees'}</h1>
-        {!isAdmin && (
-          <button className="btn-primary" onClick={() => setShowForm(true)}>
-            + Add New Tree
-          </button>
-        )}
-      </div>
+      {error && (
+        <div className="error-message">
+          {error}
+          <button onClick={() => setError('')}>×</button>
+        </div>
+      )}
+
+      <PageHeader
+        title={isAdmin ? 'All Trees' : 'My Trees'}
+        countInfo={paginationInfo}
+        itemsPerPage={itemsPerPage}
+        itemsPerPageOptions={ITEMS_PER_PAGE_OPTIONS}
+        onItemsPerPageChange={setItemsPerPage}
+        actionButton={actionButton}
+      />
 
       {showForm && !isAdmin && (
         <TreeForm
           tree={selectedTree}
           onSubmit={handleFormSubmit}
-          onCancel={() => {
-            setShowForm(false);
-            setSelectedTree(null);
-          }}
+          onCancel={handleCloseForm}
         />
       )}
 
       <div className="trees-grid">
-        {trees.map((tree) => (
-          <div key={tree.id} className="tree-card">
-            <div className="tree-card-image">
-              <img
-                src={getUploadUrl(`trees/${tree.photo}`)}
-                alt={tree.tree_type}
-              />
-              <div className={`tree-status-badge status-${tree.status}`}>
-                {tree.status}
-              </div>
-            </div>
-            <div className="tree-card-content">
-              <h3>{tree.tree_type}</h3>
-              <div className="tree-card-details">
-                <div className="detail-item">
-                  <span className="detail-label">📍</span>
-                  <span>{tree.location}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">📅</span>
-                  <span>{new Date(tree.planted_date).toLocaleDateString()}</span>
-                </div>
-                {isAdmin && (
-                  <div className="detail-item">
-                    <span className="detail-label">👤</span>
-                    <span>{tree.user_name || tree.user_email}</span>
-                  </div>
-                )}
-                {tree.tokens_allocated > 0 && (
-                  <div className="detail-item">
-                    <span className="detail-label">🪙</span>
-                    <span>{parseFloat(tree.tokens_allocated).toFixed(2)} RLF</span>
-                  </div>
-                )}
-              </div>
-              {tree.notes && (
-                <div className="tree-notes">{tree.notes}</div>
-              )}
-            </div>
-            <div className="tree-card-actions">
-              {isAdmin && tree.status === 'pending' && (
-                <>
-                  <button
-                    className="btn-success"
-                    onClick={() => handleStatusChange(tree.id, 'verified')}
-                  >
-                    Verify
-                  </button>
-                  <button
-                    className="btn-danger"
-                    onClick={() => handleStatusChange(tree.id, 'rejected')}
-                  >
-                    Reject
-                  </button>
-                </>
-              )}
-              {!isAdmin && tree.status === 'pending' && (
-                <button
-                  className="btn-secondary"
-                  onClick={() => handleEdit(tree)}
-                >
-                  Edit
-                </button>
-              )}
-              {!isAdmin && (
-                <button
-                  className="btn-danger"
-                  onClick={() => handleDelete(tree.id)}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          </div>
+        {currentTrees.map((tree) => (
+          <TreeCard
+            key={tree.id}
+            tree={tree}
+            isAdmin={isAdmin}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+          />
         ))}
       </div>
+
+      {trees.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       {trees.length === 0 && (
         <div className="empty-state">

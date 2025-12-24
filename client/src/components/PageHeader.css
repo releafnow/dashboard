@@ -1,0 +1,139 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.page-header-left {
+  flex: 1;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  color: #2d5016;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.trees-count {
+  margin: 0;
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.count-highlight {
+  color: #2d5016;
+  font-weight: 700;
+}
+
+.count-total {
+  color: #374151;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.items-per-page-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.items-per-page-selector label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.select-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #6b7280;
+  pointer-events: none;
+  transition: border-top-color 0.2s;
+}
+
+.select-wrapper:hover::after {
+  border-top-color: #2d5016;
+}
+
+.items-per-page-select {
+  padding: 10px 32px 10px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #ffffff;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+  min-width: 65px;
+  outline: none;
+}
+
+.items-per-page-select:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.items-per-page-select:focus {
+  border-color: #2d5016;
+  box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+  background: #ffffff;
+}
+
+.items-per-page-select option {
+  padding: 8px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .items-per-page-selector label {
+    font-size: 13px;
+  }
+
+  .items-per-page-select {
+    padding: 8px 28px 8px 12px;
+    font-size: 13px;
+    min-width: 60px;
+  }
+}
