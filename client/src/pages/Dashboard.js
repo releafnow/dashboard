@@ -5,7 +5,7 @@ import { getUploadUrl } from '../utils/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentTrees, setRecentTrees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,6 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      console.log("fetching dashboard data");
       const [statsRes, treesRes] = await Promise.all([
         axiosInstance.get('/api/analytics'),
         axiosInstance.get('/api/trees'),
@@ -24,7 +23,7 @@ const Dashboard = () => {
 
       // Ensure stats is set safely
       setStats(statsRes.data?.totalStats || null);
-      
+
       // Ensure trees data is always an array before calling .slice()
       let trees = [];
       if (treesRes && treesRes.data) {
@@ -34,11 +33,19 @@ const Dashboard = () => {
           console.warn('Trees API returned non-array data:', treesRes.data);
         }
       }
-      setRecentTrees(trees.slice(0, 5));
+      // Sort trees by date (most recent first) and get latest 10
+      const sortedTrees = trees
+        .filter(tree => tree && tree.id) // Filter out invalid entries
+        .sort((a, b) => {
+          const dateA = a.planted_date ? new Date(a.planted_date) : new Date(0);
+          const dateB = b.planted_date ? new Date(b.planted_date) : new Date(0);
+          return dateB - dateA; // Sort descending (newest first)
+        })
+        .slice(0, 10); // Get latest 10 trees
+
+      setRecentTrees(sortedTrees);
     } catch (error) {
-      console.error('Fetch dashboard data error:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      // Set empty array on error to prevent .map() errors
+      console.error('[Dashboard] Fetch dashboard data error:', error);
       setRecentTrees([]);
       setStats(null);
     } finally {
@@ -132,9 +139,7 @@ const Dashboard = () => {
         <h2 className="text-2xl text-primary mb-5">Recent Tree Submissions</h2>
         {Array.isArray(recentTrees) && recentTrees.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {recentTrees
-              .filter(tree => tree && tree.id) // Filter out any invalid entries
-              .map((tree) => (
+            {recentTrees.map((tree) => (
                 <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <img
                     src={getUploadUrl(`trees/${tree.photo}`)}
