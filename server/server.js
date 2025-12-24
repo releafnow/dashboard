@@ -11,6 +11,7 @@ const userRoutes = require('./routes/users');
 const treeRoutes = require('./routes/trees');
 const tokenRoutes = require('./routes/tokens');
 const analyticsRoutes = require('./routes/analytics');
+const withdrawalRoutes = require('./routes/withdrawals');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/trees', treeRoutes);
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/withdrawals', withdrawalRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
