@@ -3,6 +3,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import axiosInstance from '../config/axios';
 import { getUploadUrl } from '../utils/api';
+import { showSuccess, showError } from '../utils/toast';
 import './TreeForm.css';
 
 const MAX_PHOTOS = 10;
@@ -21,6 +22,7 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
   const [newPhotos, setNewPhotos] = useState([]); // New files to upload
   const [newPreviews, setNewPreviews] = useState([]); // Preview URLs for new files
   const [existingPhotos, setExistingPhotos] = useState([]); // Existing photos from server (when editing)
+  const [primaryNewPhotoIndex, setPrimaryNewPhotoIndex] = useState(0); // Index of primary photo among new photos
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,11 +49,13 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
       // Reset new photos
       setNewPhotos([]);
       setNewPreviews([]);
+      setPrimaryNewPhotoIndex(0);
     } else {
       setSelectedDate(null);
       setExistingPhotos([]);
       setNewPhotos([]);
       setNewPreviews([]);
+      setPrimaryNewPhotoIndex(0);
     }
   }, [tree]);
 
@@ -133,8 +137,39 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
 
     setNewPhotos(prev => prev.filter((_, i) => i !== index));
     setNewPreviews(prev => prev.filter((_, i) => i !== index));
+    
+    // Adjust primary index if needed
+    if (index < primaryNewPhotoIndex) {
+      setPrimaryNewPhotoIndex(prev => prev - 1);
+    } else if (index === primaryNewPhotoIndex) {
+      setPrimaryNewPhotoIndex(0);
+    }
+    
     setError('');
   };
+
+  // Set an existing photo as primary
+  const setExistingPhotoAsPrimary = (photoId) => {
+    setExistingPhotos(prev => prev.map(photo => ({
+      ...photo,
+      is_primary: photo.id === photoId
+    })));
+    // When setting an existing photo as primary, no new photo should be primary
+    setPrimaryNewPhotoIndex(-1);
+  };
+
+  // Set a new photo as primary
+  const setNewPhotoAsPrimary = (index) => {
+    // When setting a new photo as primary, no existing photo should be primary
+    setExistingPhotos(prev => prev.map(photo => ({
+      ...photo,
+      is_primary: false
+    })));
+    setPrimaryNewPhotoIndex(index);
+  };
+
+  // Check if any existing photo is primary
+  const hasExistingPrimary = existingPhotos.some(p => p.is_primary);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -167,21 +202,34 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
         const keepPhotoIds = existingPhotos.map(p => p.id).filter(id => id !== 'legacy');
         submitData.append('keepPhotos', JSON.stringify(keepPhotoIds));
       }
+      
+      // Include primary photo information
+      const primaryExistingPhoto = existingPhotos.find(p => p.is_primary);
+      if (primaryExistingPhoto) {
+        submitData.append('primaryPhotoId', primaryExistingPhoto.id);
+      } else if (newPhotos.length > 0) {
+        // Primary is among new photos
+        submitData.append('primaryNewPhotoIndex', primaryNewPhotoIndex >= 0 ? primaryNewPhotoIndex : 0);
+      }
 
       if (tree) {
         await axiosInstance.put(`/api/trees/${tree.id}`, submitData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        showSuccess('Tree updated successfully! 🌳');
       } else {
         await axiosInstance.post('/api/trees', submitData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        showSuccess('Tree planted successfully! 🌱');
       }
 
       onSubmit();
     } catch (error) {
       console.error('Submit tree error:', error);
-      setError(error.response?.data?.message || 'Failed to save tree');
+      const errorMessage = error.response?.data?.message || 'Failed to save tree';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -334,14 +382,23 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
                 <div className="photos-grid">
                   {/* Existing photos */}
                   {existingPhotos.map((photo) => (
-                    <div key={photo.id} className="photo-item">
+                    <div key={photo.id} className={`photo-item ${photo.is_primary ? 'is-primary' : ''}`}>
                       <img 
                         src={getUploadUrl(`trees/${photo.filename}`)} 
                         alt="Tree" 
                         className="photo-thumbnail"
                       />
-                      {photo.is_primary && (
+                      {photo.is_primary ? (
                         <span className="primary-badge">Primary</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="set-primary-btn"
+                          onClick={() => setExistingPhotoAsPrimary(photo.id)}
+                          title="Set as primary"
+                        >
+                          ★ Set Primary
+                        </button>
                       )}
                       <button
                         type="button"
@@ -355,24 +412,44 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
                   ))}
 
                   {/* New photo previews */}
-                  {newPreviews.map((item, index) => (
-                    <div key={`new-${index}`} className="photo-item new-photo">
-                      <img 
-                        src={item.preview} 
-                        alt={`New ${index + 1}`} 
-                        className="photo-thumbnail"
-                      />
-                      <span className="new-badge">New</span>
-                      <button
-                        type="button"
-                        className="photo-remove-btn"
-                        onClick={() => removeNewPhoto(index)}
-                        title="Remove photo"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                  {newPreviews.map((item, index) => {
+                    const isNewPrimary = !hasExistingPrimary && index === (primaryNewPhotoIndex >= 0 ? primaryNewPhotoIndex : 0);
+                    return (
+                      <div key={`new-${index}`} className={`photo-item new-photo ${isNewPrimary ? 'is-primary' : ''}`}>
+                        <img 
+                          src={item.preview} 
+                          alt={`New ${index + 1}`} 
+                          className="photo-thumbnail"
+                        />
+                        {isNewPrimary ? (
+                          <>
+                            <span className="new-badge">New</span>
+                            <span className="primary-badge">Primary</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="new-badge">New</span>
+                            <button
+                              type="button"
+                              className="set-primary-btn"
+                              onClick={() => setNewPhotoAsPrimary(index)}
+                              title="Set as primary"
+                            >
+                              ★ Set Primary
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className="photo-remove-btn"
+                          onClick={() => removeNewPhoto(index)}
+                          title="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

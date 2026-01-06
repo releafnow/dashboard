@@ -142,7 +142,10 @@ router.post('/', auth, upload.array('photos', MAX_PHOTOS_PER_TREE), [
       return res.status(400).json({ message: `Maximum ${MAX_PHOTOS_PER_TREE} photos allowed` });
     }
 
-    const { planted_date, location, latitude, longitude, tree_type, notes } = req.body;
+    const { planted_date, location, latitude, longitude, tree_type, notes, primaryNewPhotoIndex } = req.body;
+    
+    // Determine which photo should be primary (default to first photo)
+    const primaryIndex = primaryNewPhotoIndex !== undefined ? parseInt(primaryNewPhotoIndex) : 0;
 
     // Start transaction
     const client = await pool.connect();
@@ -165,7 +168,7 @@ router.post('/', auth, upload.array('photos', MAX_PHOTOS_PER_TREE), [
           `INSERT INTO tree_photos (tree_id, filename, is_primary)
            VALUES ($1, $2, $3)
            RETURNING *`,
-          [tree.id, file.filename, index === 0]
+          [tree.id, file.filename, index === primaryIndex]
         );
       });
       
@@ -268,32 +271,75 @@ router.put('/:id', auth, upload.array('photos', MAX_PHOTOS_PER_TREE), [
         }
       }
       
+      // Get primaryPhotoId and primaryNewPhotoIndex from request
+      const { primaryPhotoId, primaryNewPhotoIndex } = req.body;
+      
+      // Track new photo IDs for primary assignment
+      const newPhotoIds = [];
+      
       // Insert new photos
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
-          await client.query(
+          const result = await client.query(
             `INSERT INTO tree_photos (tree_id, filename, is_primary)
-             VALUES ($1, $2, $3)`,
+             VALUES ($1, $2, $3)
+             RETURNING id`,
             [req.params.id, file.filename, false]
           );
+          newPhotoIds.push(result.rows[0].id);
         }
       }
       
-      // Get updated photos
+      // Get all photos for this tree
       const updatedPhotosResult = await client.query(
-        'SELECT * FROM tree_photos WHERE tree_id = $1 ORDER BY is_primary DESC, created_at ASC',
+        'SELECT * FROM tree_photos WHERE tree_id = $1 ORDER BY created_at ASC',
         [req.params.id]
       );
-      const updatedPhotos = updatedPhotosResult.rows;
+      let updatedPhotos = updatedPhotosResult.rows;
       
-      // Ensure at least one photo is primary
-      if (updatedPhotos.length > 0 && !updatedPhotos.some(p => p.is_primary)) {
-        await client.query(
-          'UPDATE tree_photos SET is_primary = true WHERE id = $1',
-          [updatedPhotos[0].id]
-        );
-        updatedPhotos[0].is_primary = true;
+      // Set primary photo based on user selection
+      let primaryId = null;
+      
+      if (primaryPhotoId) {
+        // User selected an existing photo as primary
+        primaryId = parseInt(primaryPhotoId);
+      } else if (primaryNewPhotoIndex !== undefined && newPhotoIds.length > 0) {
+        // User selected a new photo as primary
+        const newIndex = parseInt(primaryNewPhotoIndex);
+        if (newIndex >= 0 && newIndex < newPhotoIds.length) {
+          primaryId = newPhotoIds[newIndex];
+        }
       }
+      
+      // If no primary selected, check if any existing photo is primary
+      if (!primaryId) {
+        const existingPrimary = updatedPhotos.find(p => p.is_primary);
+        if (existingPrimary) {
+          primaryId = existingPrimary.id;
+        } else if (updatedPhotos.length > 0) {
+          // Default to first photo
+          primaryId = updatedPhotos[0].id;
+        }
+      }
+      
+      // Update primary status in database
+      if (primaryId) {
+        await client.query('UPDATE tree_photos SET is_primary = false WHERE tree_id = $1', [req.params.id]);
+        await client.query('UPDATE tree_photos SET is_primary = true WHERE id = $1', [primaryId]);
+        
+        // Update the local array
+        updatedPhotos = updatedPhotos.map(p => ({
+          ...p,
+          is_primary: p.id === primaryId
+        }));
+      }
+      
+      // Re-sort photos with primary first
+      updatedPhotos.sort((a, b) => {
+        if (a.is_primary) return -1;
+        if (b.is_primary) return 1;
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
 
       // Build update query for tree fields
       const updateFields = [];

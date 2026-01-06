@@ -408,6 +408,44 @@
   color: white;
 }
 
+/* Primary photo indicator */
+.photo-item.is-primary {
+  border-color: #2d5016;
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(45, 80, 22, 0.2);
+}
+
+/* Set Primary Button */
+.set-primary-btn {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 193, 7, 0.95);
+  color: #856404;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  z-index: 5;
+}
+
+.photo-item:hover .set-primary-btn {
+  opacity: 1;
+}
+
+.set-primary-btn:hover {
+  background: rgba(255, 193, 7, 1);
+}
+
+/* Adjust new badge position when both badges are present */
+.photo-item .new-badge + .primary-badge {
+  bottom: 28px;
+}
+
 /* Compact Upload Label */
 .file-upload-label.compact {
   padding: 20px;
