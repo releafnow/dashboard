@@ -62,7 +62,7 @@ async function migrate() {
       END $$;
     `);
 
-    // Create trees table
+    // Create trees table (photo column removed - use tree_photos table instead)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS trees (
         id SERIAL PRIMARY KEY,
@@ -72,7 +72,6 @@ async function migrate() {
         latitude DECIMAL(10, 8),
         longitude DECIMAL(11, 8),
         tree_type VARCHAR(100) NOT NULL,
-        photo VARCHAR(255) NOT NULL,
         status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
         tokens_allocated DECIMAL(18, 2) DEFAULT 0,
         verified_by INTEGER REFERENCES users(id),
@@ -116,11 +115,57 @@ async function migrate() {
       )
     `);
 
+    // Create tree_photos table for multiple images per tree
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tree_photos (
+        id SERIAL PRIMARY KEY,
+        tree_id INTEGER REFERENCES trees(id) ON DELETE CASCADE,
+        filename VARCHAR(255) NOT NULL,
+        is_primary BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Migrate existing photos from trees table to tree_photos table (if not already done)
+    // Check if photo column exists before migrating
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name='trees' AND column_name='photo'
+        ) THEN
+          INSERT INTO tree_photos (tree_id, filename, is_primary, created_at)
+          SELECT id, photo, true, created_at
+          FROM trees
+          WHERE photo IS NOT NULL 
+            AND photo != ''
+            AND NOT EXISTS (
+              SELECT 1 FROM tree_photos WHERE tree_photos.tree_id = trees.id
+            );
+        END IF;
+      END $$;
+    `);
+
+    // Drop the photo column from trees table (no longer needed)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name='trees' AND column_name='photo'
+        ) THEN
+          ALTER TABLE trees DROP COLUMN photo;
+        END IF;
+      END $$;
+    `);
+
     // Create indexes
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_trees_user_id ON trees(user_id);
       CREATE INDEX IF NOT EXISTS idx_trees_status ON trees(status);
       CREATE INDEX IF NOT EXISTS idx_trees_planted_date ON trees(planted_date);
+      CREATE INDEX IF NOT EXISTS idx_tree_photos_tree_id ON tree_photos(tree_id);
       CREATE INDEX IF NOT EXISTS idx_token_transactions_user_id ON token_transactions(user_id);
       CREATE INDEX IF NOT EXISTS idx_token_transactions_status ON token_transactions(status);
       CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);

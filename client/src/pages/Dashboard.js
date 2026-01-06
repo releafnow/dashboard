@@ -141,11 +141,13 @@ const Dashboard = () => {
           <div className="flex flex-col gap-4">
             {recentTrees.map((tree) => (
                 <div key={tree.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <img
-                    src={getUploadUrl(`trees/${tree.photo}`)}
-                    alt={tree.tree_type || 'Tree'}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
+                  {tree.photos && tree.photos.length > 0 && (
+                    <img
+                      src={getUploadUrl(`trees/${tree.photos[0].filename}`)}
+                      alt={tree.tree_type || 'Tree'}
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                  )}
                   <div className="flex-1">
                     <div className="font-semibold text-primary text-base mb-1">{tree.tree_type || 'Unknown'}</div>
                     <div className="text-gray-600 text-sm mb-1">{tree.location || 'Unknown location'}</div>

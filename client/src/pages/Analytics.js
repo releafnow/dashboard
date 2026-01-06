@@ -148,7 +148,7 @@ const Analytics = () => {
               setTimeRange(e.target.value);
               setShowCustomPicker(e.target.value === 'custom');
             }}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            className="analytics-select px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-0 bg-white text-gray-700 min-w-[160px] shadow-sm"
           >
             <option value="all">All Time</option>
             <option value="day">Today</option>
@@ -164,7 +164,7 @@ const Analytics = () => {
             <select 
               value={groupBy} 
               onChange={(e) => setGroupBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+              className="analytics-select px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-0 bg-white text-gray-700 min-w-[160px] shadow-sm"
               title="Group data by time period"
             >
               <option value="day">Group by Day</option>

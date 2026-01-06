@@ -5,6 +5,8 @@ import axiosInstance from '../config/axios';
 import { getUploadUrl } from '../utils/api';
 import './TreeForm.css';
 
+const MAX_PHOTOS = 10;
+
 const TreeForm = ({ tree, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     planted_date: '',
@@ -13,12 +15,15 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
     longitude: '',
     tree_type: '',
     notes: '',
-    photo: null,
   });
-  const [preview, setPreview] = useState(null);
+  
+  // Multiple photos support
+  const [newPhotos, setNewPhotos] = useState([]); // New files to upload
+  const [newPreviews, setNewPreviews] = useState([]); // Preview URLs for new files
+  const [existingPhotos, setExistingPhotos] = useState([]); // Existing photos from server (when editing)
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
@@ -31,14 +36,22 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
         longitude: tree.longitude || '',
         tree_type: tree.tree_type || '',
         notes: tree.notes || '',
-        photo: null,
       });
       setSelectedDate(dateValue ? new Date(dateValue) : null);
-      if (tree.photo) {
-        setPreview(getUploadUrl(`trees/${tree.photo}`));
+      
+      // Load existing photos from tree_photos table
+      if (tree.photos && tree.photos.length > 0) {
+        setExistingPhotos(tree.photos);
       }
+      
+      // Reset new photos
+      setNewPhotos([]);
+      setNewPreviews([]);
     } else {
       setSelectedDate(null);
+      setExistingPhotos([]);
+      setNewPhotos([]);
+      setNewPreviews([]);
     }
   }, [tree]);
 
@@ -67,21 +80,72 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
     }
   };
 
+  const totalPhotosCount = existingPhotos.length + newPhotos.length;
+
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, photo: file });
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Check total photos limit
+    const remainingSlots = MAX_PHOTOS - totalPhotosCount;
+    if (remainingSlots <= 0) {
+      setError(`Maximum ${MAX_PHOTOS} photos allowed`);
+      return;
+    }
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      setError(`Only ${remainingSlots} more photo(s) can be added. Maximum is ${MAX_PHOTOS}.`);
+    }
+
+    // Add new files
+    setNewPhotos(prev => [...prev, ...filesToAdd]);
+
+    // Generate previews for new files
+    filesToAdd.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result);
+        setNewPreviews(prev => [...prev, { file, preview: reader.result }]);
       };
       reader.readAsDataURL(file);
+    });
+
+    // Reset the input
+    e.target.value = '';
+  };
+
+  const removeExistingPhoto = (photoId) => {
+    // Don't allow removing the last photo
+    if (existingPhotos.length + newPhotos.length <= 1) {
+      setError('At least one photo is required');
+      return;
     }
+    setExistingPhotos(prev => prev.filter(p => p.id !== photoId));
+    setError('');
+  };
+
+  const removeNewPhoto = (index) => {
+    // Don't allow removing the last photo
+    if (existingPhotos.length + newPhotos.length <= 1) {
+      setError('At least one photo is required');
+      return;
+    }
+
+    setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    setNewPreviews(prev => prev.filter((_, i) => i !== index));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validate at least one photo
+    if (existingPhotos.length === 0 && newPhotos.length === 0) {
+      setError('At least one photo is required');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -92,7 +156,17 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
       if (formData.latitude) submitData.append('latitude', formData.latitude);
       if (formData.longitude) submitData.append('longitude', formData.longitude);
       if (formData.notes) submitData.append('notes', formData.notes);
-      if (formData.photo) submitData.append('photo', formData.photo);
+
+      // Append all new photos
+      newPhotos.forEach(photo => {
+        submitData.append('photos', photo);
+      });
+
+      // For updates, include IDs of existing photos to keep
+      if (tree) {
+        const keepPhotoIds = existingPhotos.map(p => p.id).filter(id => id !== 'legacy');
+        submitData.append('keepPhotos', JSON.stringify(keepPhotoIds));
+      }
 
       if (tree) {
         await axiosInstance.put(`/api/trees/${tree.id}`, submitData, {
@@ -134,13 +208,14 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
               <span className="section-icon">📅</span>
               <span>Basic Information</span>
             </div>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label className="label-with-icon">
                   <span className="label-icon mr-2">📆</span>
                   Planting Date <span className="required-asterisk">*</span>
                 </label>
+
                 <div className="input-wrapper">
                   <DatePicker
                     selected={selectedDate}
@@ -200,7 +275,7 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
               <span className="section-icon">🌐</span>
               <span>Coordinates (Optional)</span>
             </div>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label className="label-with-icon">
@@ -242,37 +317,91 @@ const TreeForm = ({ tree, onSubmit, onCancel }) => {
             <div className="form-section-title">
               <span className="section-icon">📸</span>
               <span>Photo Evidence</span>
+              <span className="photo-count-badge">
+                {totalPhotosCount}/{MAX_PHOTOS}
+              </span>
             </div>
-            
+
             <div className="form-group">
               <label className="label-with-icon">
                 <span className="label-icon mr-2">🖼️</span>
-                Photo {!tree && <span className="required-asterisk">*</span>}
+                Photos {!tree && <span className="required-asterisk">*</span>}
+                <span className="label-hint">(Up to {MAX_PHOTOS} images)</span>
               </label>
-              <div className="file-upload-area">
-                <input
-                  type="file"
-                  id="photo-upload"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  required={!tree}
-                  className="file-input-hidden"
-                />
-                <label htmlFor="photo-upload" className="file-upload-label">
-                  {preview ? (
-                    <div className="photo-preview-container">
-                      <img src={preview} alt="Preview" className="photo-preview-img" />
-                      <span className="photo-change-text">Click to change photo</span>
+              
+              {/* Photo Grid */}
+              {(existingPhotos.length > 0 || newPreviews.length > 0) && (
+                <div className="photos-grid">
+                  {/* Existing photos */}
+                  {existingPhotos.map((photo) => (
+                    <div key={photo.id} className="photo-item">
+                      <img 
+                        src={getUploadUrl(`trees/${photo.filename}`)} 
+                        alt="Tree" 
+                        className="photo-thumbnail"
+                      />
+                      {photo.is_primary && (
+                        <span className="primary-badge">Primary</span>
+                      )}
+                      <button
+                        type="button"
+                        className="photo-remove-btn"
+                        onClick={() => removeExistingPhoto(photo.id)}
+                        title="Remove photo"
+                      >
+                        ×
+                      </button>
                     </div>
-                  ) : (
+                  ))}
+
+                  {/* New photo previews */}
+                  {newPreviews.map((item, index) => (
+                    <div key={`new-${index}`} className="photo-item new-photo">
+                      <img 
+                        src={item.preview} 
+                        alt={`New ${index + 1}`} 
+                        className="photo-thumbnail"
+                      />
+                      <span className="new-badge">New</span>
+                      <button
+                        type="button"
+                        className="photo-remove-btn"
+                        onClick={() => removeNewPhoto(index)}
+                        title="Remove photo"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload area */}
+              {totalPhotosCount < MAX_PHOTOS && (
+                <div className="file-upload-area">
+                  <input
+                    type="file"
+                    id="photo-upload"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoChange}
+                    className="file-input-hidden"
+                  />
+                  <label htmlFor="photo-upload" className="file-upload-label compact">
                     <div className="file-upload-placeholder">
                       <span className="upload-icon">📁</span>
-                      <span className="upload-text">Click to upload or drag and drop</span>
-                      <span className="upload-hint">PNG, JPG up to 10MB</span>
+                      <span className="upload-text">
+                        {totalPhotosCount === 0 
+                          ? 'Click to upload photos' 
+                          : 'Add more photos'}
+                      </span>
+                      <span className="upload-hint">
+                        PNG, JPG up to 10MB each • {MAX_PHOTOS - totalPhotosCount} slot(s) remaining
+                      </span>
                     </div>
-                  )}
-                </label>
-              </div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 
