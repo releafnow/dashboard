@@ -16,6 +16,7 @@ const TokenManagement = () => {
     type: 'reward',
     tree_id: '',
     notes: '',
+    transaction_hash: '',
     auto_approve: false,
   });
   const [users, setUsers] = useState([]);
@@ -156,6 +157,7 @@ const TokenManagement = () => {
         amount: parseFloat(formData.amount),
         user_id: parseInt(formData.user_id),
         tree_id: formData.tree_id ? parseInt(formData.tree_id) : null,
+        transaction_hash: formData.transaction_hash || null,
       });
       setShowAllocateForm(false);
       setFormData({
@@ -164,6 +166,7 @@ const TokenManagement = () => {
         type: 'reward',
         tree_id: '',
         notes: '',
+        transaction_hash: '',
         auto_approve: false,
       });
       fetchData();
@@ -173,13 +176,31 @@ const TokenManagement = () => {
     }
   };
 
-  const handleStatusChange = async (id, status) => {
+  const handleStatusChange = async (id, status, transactionHash = '') => {
     try {
-      await axiosInstance.patch(`/api/tokens/transactions/${id}/status`, { status });
+      const data = { status };
+      if (transactionHash) {
+        data.transaction_hash = transactionHash;
+      }
+      await axiosInstance.patch(`/api/tokens/transactions/${id}/status`, data);
       fetchData();
     } catch (error) {
       console.error('Update status error:', error);
       alert('Failed to update transaction status');
+    }
+  };
+
+  const handleUpdateTransactionHash = async (id) => {
+    const hash = window.prompt('Enter the blockchain transaction hash:');
+    if (hash) {
+      try {
+        await axiosInstance.patch(`/api/tokens/transactions/${id}/hash`, { transaction_hash: hash });
+        fetchData();
+        alert('Transaction hash updated successfully!');
+      } catch (error) {
+        console.error('Update transaction hash error:', error);
+        alert('Failed to update transaction hash');
+      }
     }
   };
 
@@ -409,6 +430,44 @@ const TokenManagement = () => {
                     </option>
                   ))}
                 </select>
+                {/* Show selected user's wallet address */}
+                {formData.user_id && (() => {
+                  const selectedUser = users.find(u => u.id === parseInt(formData.user_id));
+                  return selectedUser ? (
+                    <div style={{ marginTop: '10px', padding: '12px', background: '#e8f5e9', borderRadius: '8px', border: '1px solid #c8e6c9' }}>
+                      <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>💳 Wallet Address:</div>
+                      {selectedUser.withdrawal_address ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <code style={{ fontSize: '12px', wordBreak: 'break-all', flex: 1 }}>
+                            {selectedUser.withdrawal_address}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedUser.withdrawal_address);
+                              alert('Wallet address copied!');
+                            }}
+                            style={{ 
+                              padding: '4px 8px', 
+                              fontSize: '11px', 
+                              background: '#2d5016', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            📋 Copy
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#dc3545', fontSize: '13px' }}>
+                          ⚠️ User has not set a wallet address
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               <div className="form-group">
@@ -437,11 +496,25 @@ const TokenManagement = () => {
               </div>
 
               <div className="form-group">
+                <label>🔗 Transaction Hash (Blockchain TX)</label>
+                <input
+                  type="text"
+                  value={formData.transaction_hash}
+                  onChange={(e) => setFormData({ ...formData, transaction_hash: e.target.value })}
+                  placeholder="Enter the blockchain transaction hash after sending tokens"
+                />
+                <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>
+                  Paste the transaction hash from your wallet after sending RLF tokens
+                </small>
+              </div>
+
+              <div className="form-group">
                 <label>Notes</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows="3"
+                  placeholder="Additional notes about this token allocation"
                 />
               </div>
 
@@ -454,6 +527,9 @@ const TokenManagement = () => {
                   />
                   Auto-approve (mark as completed immediately)
                 </label>
+                <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>
+                  Check this if you have already sent the tokens on the blockchain
+                </small>
               </div>
 
               <div className="form-actions">
@@ -600,6 +676,7 @@ const TokenManagement = () => {
                 <th>Amount</th>
                 <th>Status</th>
                 {isAdmin && <th>User</th>}
+                <th>TX Hash</th>
                 {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
@@ -617,22 +694,60 @@ const TokenManagement = () => {
                     <span className={`status-badge status-${tx.status}`}>{tx.status}</span>
                   </td>
                   {isAdmin && <td>{tx.user_name || tx.user_email}</td>}
-                  {isAdmin && tx.status === 'pending' && (
+                  <td style={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '150px', wordBreak: 'break-all' }}>
+                    {tx.transaction_hash ? (
+                      <a 
+                        href={`https://bscscan.com/tx/${tx.transaction_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={tx.transaction_hash}
+                        style={{ color: '#2d5016', textDecoration: 'none' }}
+                      >
+                        {tx.transaction_hash.substring(0, 10)}...{tx.transaction_hash.substring(tx.transaction_hash.length - 6)}
+                        <span style={{ marginLeft: '4px', fontSize: '10px' }}>↗</span>
+                      </a>
+                    ) : (
+                      <span style={{ color: '#999' }}>-</span>
+                    )}
+                  </td>
+                  {isAdmin && (
                     <td>
-                      <div className="action-buttons">
+                      {tx.status === 'pending' && (
+                        <div className="action-buttons">
+                          <button
+                            className="btn-success-small"
+                            onClick={() => {
+                              const hash = window.prompt('Enter the blockchain transaction hash (optional):');
+                              handleStatusChange(tx.id, 'completed', hash || '');
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn-danger-small"
+                            onClick={() => handleStatusChange(tx.id, 'cancelled')}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                      {tx.status === 'completed' && !tx.transaction_hash && (
                         <button
-                          className="btn-success-small"
-                          onClick={() => handleStatusChange(tx.id, 'completed')}
+                          className="btn-primary-small"
+                          onClick={() => handleUpdateTransactionHash(tx.id)}
                         >
-                          Approve
+                          Add TX Hash
                         </button>
+                      )}
+                      {tx.status === 'completed' && tx.transaction_hash && (
                         <button
-                          className="btn-danger-small"
-                          onClick={() => handleStatusChange(tx.id, 'cancelled')}
+                          className="btn-secondary-small"
+                          onClick={() => handleUpdateTransactionHash(tx.id)}
+                          title="Update transaction hash"
                         >
-                          Reject
+                          ✏️ Edit
                         </button>
-                      </div>
+                      )}
                     </td>
                   )}
                 </tr>

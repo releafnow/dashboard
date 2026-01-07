@@ -91,7 +91,7 @@ router.post('/allocate', auth, requireAdmin, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { user_id, amount, type, tree_id, notes, auto_approve = false } = req.body;
+    const { user_id, amount, type, tree_id, notes, transaction_hash, auto_approve = false } = req.body;
 
     // Verify user exists
     const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
@@ -104,10 +104,10 @@ router.post('/allocate', auth, requireAdmin, [
     const processedAt = auto_approve ? new Date() : null;
 
     const result = await pool.query(
-      `INSERT INTO token_transactions (user_id, tree_id, amount, type, status, processed_by, processed_at, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO token_transactions (user_id, tree_id, amount, type, status, processed_by, processed_at, transaction_hash, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [user_id, tree_id || null, amount, type, status, processedBy, processedAt, notes || null]
+      [user_id, tree_id || null, amount, type, status, processedBy, processedAt, transaction_hash || null, notes || null]
     );
 
     // If it's a reward for a tree, update the tree's tokens_allocated
@@ -135,15 +135,24 @@ router.patch('/transactions/:id/status', auth, requireAdmin, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { status } = req.body;
+    const { status, transaction_hash } = req.body;
 
-    const result = await pool.query(
-      `UPDATE token_transactions 
-       SET status = $1, processed_by = $2, processed_at = CURRENT_TIMESTAMP 
-       WHERE id = $3 AND status = 'pending'
-       RETURNING *`,
-      [status, req.user.id, req.params.id]
-    );
+    let query = `UPDATE token_transactions 
+       SET status = $1, processed_by = $2, processed_at = CURRENT_TIMESTAMP`;
+    let params = [status, req.user.id];
+    let paramIndex = 3;
+
+    // Add transaction_hash if provided
+    if (transaction_hash) {
+      query += `, transaction_hash = $${paramIndex}`;
+      params.push(transaction_hash);
+      paramIndex++;
+    }
+
+    query += ` WHERE id = $${paramIndex} AND status = 'pending' RETURNING *`;
+    params.push(req.params.id);
+
+    const result = await pool.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Transaction not found or already processed' });
@@ -152,6 +161,37 @@ router.patch('/transactions/:id/status', auth, requireAdmin, [
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Update transaction status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update transaction hash for a completed transaction (admin only)
+router.patch('/transactions/:id/hash', auth, requireAdmin, [
+  body('transaction_hash').notEmpty().withMessage('Transaction hash is required'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { transaction_hash } = req.body;
+
+    const result = await pool.query(
+      `UPDATE token_transactions 
+       SET transaction_hash = $1 
+       WHERE id = $2
+       RETURNING *`,
+      [transaction_hash, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update transaction hash error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

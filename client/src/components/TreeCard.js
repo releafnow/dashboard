@@ -144,6 +144,38 @@ const TreeCard = ({ tree, isAdmin, onEdit, onDelete, onStatusChange }) => {
               </div>
             )}
           </div>
+          
+          {/* Token Rewards Section - shows transaction proof */}
+          {tree.token_rewards && tree.token_rewards.length > 0 && (
+            <div className="token-rewards-section">
+              <div className="token-rewards-header">
+                <span className="token-icon">🎉</span>
+                <span className="token-title">Token Reward</span>
+              </div>
+              {tree.token_rewards.map((reward, index) => (
+                <div key={index} className="token-reward-item">
+                  <div className="reward-amount">
+                    +{formatTokens(reward.amount)} RLF
+                  </div>
+                  {reward.transaction_hash && (
+                    <div className="reward-tx-hash">
+                      <span className="tx-label">TX:</span>
+                      <a 
+                        href={`https://bscscan.com/tx/${reward.transaction_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="tx-link"
+                        title={reward.transaction_hash}
+                      >
+                        {reward.transaction_hash.substring(0, 8)}...{reward.transaction_hash.substring(reward.transaction_hash.length - 6)}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {tree.notes && (
             <div className="tree-notes">{tree.notes}</div>
           )}

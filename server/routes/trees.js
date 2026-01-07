@@ -62,7 +62,13 @@ async function getTreePhotos(treeIds) {
 // Get all trees (admin: all, member: own)
 router.get('/', auth, async (req, res) => {
   try {
-    let query = 'SELECT t.*, u.name as user_name, u.email as user_email FROM trees t JOIN users u ON t.user_id = u.id';
+    // For admin, include user's wallet address for token sending
+    let query = `
+      SELECT t.*, u.name as user_name, u.email as user_email
+      ${req.user.role === 'admin' ? ', u.withdrawal_address as user_wallet_address' : ''}
+      FROM trees t 
+      JOIN users u ON t.user_id = u.id
+    `;
     let params = [];
 
     if (req.user.role === 'member') {
@@ -78,10 +84,28 @@ router.get('/', auth, async (req, res) => {
     const treeIds = result.rows.map(t => t.id);
     const photosByTree = await getTreePhotos(treeIds);
     
-    // Attach photos to each tree
+    // Get token transactions for these trees (to show rewards)
+    let tokensByTree = {};
+    if (treeIds.length > 0) {
+      const tokenResult = await pool.query(
+        `SELECT tree_id, amount, transaction_hash, status 
+         FROM token_transactions 
+         WHERE tree_id = ANY($1) AND type = 'reward' AND status = 'completed'`,
+        [treeIds]
+      );
+      tokenResult.rows.forEach(token => {
+        if (!tokensByTree[token.tree_id]) {
+          tokensByTree[token.tree_id] = [];
+        }
+        tokensByTree[token.tree_id].push(token);
+      });
+    }
+    
+    // Attach photos and token info to each tree
     const treesWithPhotos = result.rows.map(tree => ({
       ...tree,
-      photos: photosByTree[tree.id] || []
+      photos: photosByTree[tree.id] || [],
+      token_rewards: tokensByTree[tree.id] || []
     }));
     
     res.json(treesWithPhotos);

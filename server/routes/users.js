@@ -39,7 +39,7 @@ const upload = multer({
 router.get('/', auth, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, name, role, country, address, phone, photo, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, country, address, phone, photo, withdrawal_address, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {

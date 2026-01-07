@@ -93,9 +93,23 @@ async function migrate() {
         status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'cancelled')),
         processed_by INTEGER REFERENCES users(id),
         processed_at TIMESTAMP,
+        transaction_hash VARCHAR(255),
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add transaction_hash column if it doesn't exist (for existing databases)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name='token_transactions' AND column_name='transaction_hash'
+        ) THEN
+          ALTER TABLE token_transactions ADD COLUMN transaction_hash VARCHAR(255);
+        END IF;
+      END $$;
     `);
 
     // Create withdrawal_requests table
